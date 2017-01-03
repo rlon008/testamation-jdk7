@@ -16,6 +16,9 @@
 
 package nz.co.testamation.common.util;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.xml.XMLConstants;
@@ -50,14 +53,24 @@ public class PrefixMapNamespaceContext implements NamespaceContext {
         return null;
     }
 
-    public Iterator<String> getPrefixes( String namespaceURI ) {
-//        return prefixNamespaceMap
-//            .entrySet()
-//            .stream()
-//            .filter( entry -> namespaceURI.equals( entry.getValue() ) )
-//            .map( Map.Entry::getKey )
-//            .collect( Collectors.toList() ).iterator();
-        return null;
+    public Iterator<String> getPrefixes( final String namespaceURI ) {
+        return Iterables.transform(
+            Iterables.filter(
+                prefixNamespaceMap.entrySet(),
+                new Predicate<Map.Entry<String, String>>() {
+                    @Override
+                    public boolean apply( Map.Entry<String, String> entry ) {
+                        return namespaceURI.equals( entry.getValue() );
+                    }
+                }
+            ), new Function<Map.Entry<String, String>, String>() {
+                @Override
+                public String apply( Map.Entry<String, String> entry ) {
+                    return entry.getKey();
+                }
+            }
+        ).iterator();
+
     }
 
 }
