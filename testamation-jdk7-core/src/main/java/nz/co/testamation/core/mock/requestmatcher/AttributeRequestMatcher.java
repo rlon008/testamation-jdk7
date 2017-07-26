@@ -16,6 +16,7 @@
 
 package nz.co.testamation.core.mock.requestmatcher;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import nz.co.testamation.core.mock.HttpServletRequestWrapper;
 import org.hamcrest.Matcher;
@@ -51,6 +52,24 @@ public abstract class AttributeRequestMatcher<T extends AttributeRequestMatcher>
         return true;
     }
 
+    public static void main( String[] args ) {
+        ImmutableMap<String, ImmutableMap<String, String>> map = ImmutableMap.of( "k1", ImmutableMap.of( "v1", "actual" ) );
+
+        System.out.println( "k1".split( "\\." )[0]);
+
+        String[] elExpression = "k1.v1".split( "\\." );
+        System.out.println( Lists.newArrayList(elExpression) );
+
+        Object value = map;
+        for ( String s : elExpression ) {
+            value = ((Map)value).get( s );
+        }
+
+        System.out.println("value: " + value);
+
+
+    }
+
     private boolean matchRequestAttributes( HttpServletRequestWrapper request ) {
 
         actualAttributes = parseRequest( request );
@@ -62,16 +81,16 @@ public abstract class AttributeRequestMatcher<T extends AttributeRequestMatcher>
         }
 
         for ( Map.Entry<String, Matcher> attribute : attributeMatchers.entrySet() ) {
-
-            if ( !actualAttributes.containsKey( attribute.getKey() ) ) {
-                logger.error( String.format( "Expected request attributes to contain key %s. Actual was: %s", attribute.getKey(), actualAttributes ) );
+            Object actualValue;
+            try {
+                actualValue = getActualValueFromElExpression( attribute.getKey() );
+            }catch ( Exception ex ){
+                logger.error( String.format( "Expected request attributes to contain key %s. Actual attributes (map) was: %s", attribute.getKey(), actualAttributes ) );
                 return false;
             }
 
-            Object requestValue = actualAttributes.get( attribute.getKey() );
-
             if ( attribute.getValue() != null ) {
-                if ( !matches( attribute.getKey(), attribute.getValue(), requestValue ) ) {
+                if ( !matches( attribute.getKey(), attribute.getValue(), actualValue ) ) {
                     return false;
                 }
             }
@@ -84,6 +103,14 @@ public abstract class AttributeRequestMatcher<T extends AttributeRequestMatcher>
         }
 
         return true;
+    }
+
+    private Object getActualValueFromElExpression( String expression ) {
+        Object value = actualAttributes;
+        for ( String key : expression.split( "\\." ) ) {
+            value = ( (Map) value ).get( key );
+        }
+        return value;
     }
 
     private boolean matches( String key, Matcher matcher, Object requestValue ) {
